@@ -1,0 +1,15 @@
+configuration {
+    modi:  "drun,run";
+    theme: "/home/colin/.config/rofi/themes/default.rasi";
+
+    display-run:   "COMMAND";
+    display-drun:  "DESKTOP";
+    matching : "fuzzy";
+    kb-row-tab: "";
+    kb-row-up: "Up";
+    kb-mode-next: "Tab";
+    kb-mode-previous: "ISO_Left_Tab";
+}
+* {
+    font: "Noto Mono bold 14";
+}
