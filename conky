@@ -1,0 +1,124 @@
+conky.config = {
+-- window settings
+    own_window = true,
+    own_window_title = "Conky",
+    double_buffer = true,
+    use_xft = true,
+
+-- visual settings
+    draw_outline = false,
+    draw_shades = false,
+    font = 'ProFontIIx Nerd Font Mono:size=10',
+
+-- object settings
+    default_graph_height = 38,
+    top_name_width = 29,
+    no_buffers = false,
+
+-- color settings
+    default_color =     '586e75', -- base01 secondary content
+    color1 =            '839496', -- base0 primary content
+    color2 =            '2aa198', -- cyan title color
+    color3 =            'cb4b16', -- orange highlight color
+    own_window_colour = '002b36', -- base03 background
+}
+
+conky.text = [[
+#TIME/DATE
+${color2}\
+${font ProFontIIx Nerd Font Mono:size=50}${alignc}${time %H %M}${font ProFontIIx Nerd Font Mono:size=13}
+${alignc}${time %A, %B %d}
+
+#
+#System Info
+#
+${font ProFontIIx Nerd Font Mono:size=10:bold}\
+${color1}System Info ${hr 2}${color}
+${font}\
+Kernel: ${alignr}${kernel}
+Name: ${alignr}${nodename}
+Uptime: ${alignr}${uptime}
+
+#
+#Temperature
+#
+${font ProFontIIx Nerd Font Mono:size=10:bold}\
+${color1}Temerature ${hr 2}${color}
+${font}\
+CPU: ${execi 15 sensors|grep "Tdie"|awk '{print $2}'|cut -c 2-3}°C${alignr}root: ${execi 45 hddtemp /dev/disk/by-uuid/bc8af0cc-7544-468a-b0ea-66fec1f832cf|awk '{print $3}'}
+GPU: ${execi 15 nvidia-smi -q -d temperature -i 1|sed -n 11p|awk '{print $5}'}°C${alignr}home: ${execi 45 hddtemp /dev/disk/by-uuid/3c2f28b5-feac-4870-9d19-50907e1e4cbe|awk '{print $3}'}
+${alignr}boot: ${execi 45 hddtemp /dev/disk/by-uuid/8578a45d-6db2-4df3-a314-ddb1a5531118|awk '{print $4}'}
+
+#
+#Processor
+#
+${font ProFontIIx Nerd Font Mono:size=10:bold}\
+${color1}CPU ${hr 2}${color}
+${font}\
+Frequency: ${freq_g} GHz${alignr}Used: ${cpu}%
+Cores:
+1 ${cpubar cpu1 10, 104}${goto 175}2 ${cpubar cpu2 10, 104}
+3 ${cpubar cpu3 10, 104}${goto 175}4 ${cpubar cpu4 10, 104}
+5 ${cpubar cpu5 10, 104}${goto 175}6 ${cpubar cpu6 10, 104}
+${cpugraph}
+${color1}Process${alignr}CPU%${color}
+${color3}${top name 1}${alignr}${top cpu 1}${color}
+${top name 2}${alignr}${top cpu 2}
+${top name 3}${alignr}${top cpu 3}
+${top name 4}${alignr}${top cpu 4}
+
+#
+#Memory
+#
+${font ProFontIIx Nerd Font Mono:size=10:bold}\
+${color1}Memory ${hr 2}${color}
+${font}\
+RAM: ${mem}${goto 175}Total: ${memmax}
+${membar}
+Swap: ${swap}${goto 175}Total: ${swapmax}
+${swapbar}
+${memgraph}
+${color1}Process${alignr}MEM%${color}
+${color3}${top_mem name 1}${alignr}${top_mem mem 1}${color}
+${top_mem name 2}${alignr}${top_mem mem 2}
+${top_mem name 3}${alignr}${top_mem mem 3}
+${top_mem name 4}${alignr}${top_mem mem 4}
+
+#
+#GPU
+#
+${font ProFontIIx Nerd Font Mono:size=10:bold}\
+${color1}GPU ${hr 2}${color}
+${font}\
+Graphics: ${exec nvidia-smi -q -d clock -i 1|sed -n 11p|awk '{printf "%0.2f GHz", $3/1000}'}\
+${alignr}Used: ${exec nvidia-smi -q -d utilization -i 1|sed -n 11p|awk '{print $3}'}%
+SM:       ${exec nvidia-smi -q -d clock -i 1|sed -n 12p|awk '{printf "%0.2f GHz", $3/1000}'}
+Memory:   ${exec nvidia-smi -q -d clock -i 1|sed -n 13p|awk '{printf "%0.2f GHz", $3/1000}'}
+Video:    ${exec nvidia-smi -q -d clock -i 1|sed -n 14p|awk '{printf "%0.2f GHz", $3/1000}'}
+${execgraph "nvidia-smi -q -d utilization -i 1|sed -n 11p|awk '{print $3}'"}
+RAM: ${exec nvidia-smi -q -d memory -i 1|sed -n 12p|awk '{print $3 " " $4}'}${goto 175}Total: ${exec nvidia-smi -q -d memory -i 1|sed -n 11p|awk '{print $3 " " $4}'}
+${execbar "nvidia-smi -q -d utilization -i 1|sed -n 12p|awk '{print $3}'"}
+
+#
+#Disk
+#
+${font ProFontIIx Nerd Font Mono:size=10:bold}\
+${color1}Disk ${hr 2}${color}
+${font}\
+root: ${fs_used /}${goto 175}Total: ${fs_size /}
+${fs_bar /}
+home: ${fs_used /home}${goto 175}Total: ${fs_size /home}
+${fs_bar /home}
+Read: ${diskio_read /dev/disk/by-uuid/3c2f28b5-feac-4870-9d19-50907e1e4cbe}${goto 175}Write: ${diskio_write /dev/disk/by-uuid/3c2f28b5-feac-4870-9d19-50907e1e4cbe}
+${diskiograph_read /dev/disk/by-uuid/3c2f28b5-feac-4870-9d19-50907e1e4cbe 40, 118}${goto 175}${diskiograph_write /dev/disk/by-uuid/3c2f28b5-feac-4870-9d19-50907e1e4cbe 40, 118}
+
+#
+#Network
+#
+${font ProFontIIx Nerd Font Mono:size=10:bold}\
+${color1}Network ${hr 2}${color}
+${font}\
+${addr wlp34s1}${alignr}${if_existing /sys/class/net/wlp34s1/operstate up}${color3}Connected${endif}${color}
+Up: ${upspeed wlp34s1}/s${goto 175}Down: ${downspeed wlp34s1}/s
+${upspeedgraph wlp34s1 40, 118}${goto 175}${downspeedgraph wlp34s1 40, 118}\
+]];
