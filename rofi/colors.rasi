@@ -1,0 +1,14 @@
+* {
+    normal-fg:  #839496;
+    normal-bg:  #002b36;
+    select-fg:  #cb4b16;
+    select-bg:  #002b36;
+    message-fg: #586e75;
+    message-bg: #002b36;
+    elem1-fg:   #657b83;
+    elem1-bg:   #002b36;
+    elem2-fg:   #586e75;
+    elem2-bg:   #073642;
+    prompt-fg:  #2aa198;
+    border:     #cb4b16;
+}
