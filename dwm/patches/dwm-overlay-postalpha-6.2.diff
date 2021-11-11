@@ -1,0 +1,145 @@
+diff --git a/config.def.h b/config.def.h
+index ca7a9ba..8c085e6 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -12,17 +12,26 @@ static const char col_gray2[]       = "#444444";
+ static const char col_gray3[]       = "#bbbbbb";
+ static const char col_gray4[]       = "#eeeeee";
+ static const char col_cyan[]        = "#005577";
++static const char col_black[]       = "#000000";
+ static const unsigned int baralpha = 0xd0;
+ static const unsigned int borderalpha = OPAQUE;
++static const unsigned int overlayalpha = 0xa0;
++
+ static const char *colors[][3]      = {
+ 	/*               fg         bg         border   */
+ 	[SchemeNorm] = { col_gray3, col_gray1, col_gray2 },
+ 	[SchemeSel]  = { col_gray4, col_cyan,  col_cyan  },
++	/*                      n/a   bg         border   */
++	[SchemeOverlayNorm] = { NULL, col_black, col_gray2 },
++	[SchemeOverlaySel]  = { NULL, col_black, col_cyan  },
+ };
+ static const unsigned int alphas[][3]      = {
+ 	/*               fg      bg        border     */
+ 	[SchemeNorm] = { OPAQUE, baralpha, borderalpha },
+ 	[SchemeSel]  = { OPAQUE, baralpha, borderalpha },
++	/*                       n/a  bg            border */
++	[SchemeOverlayNorm]  = { 0,   overlayalpha, OPAQUE  },
++	[SchemeOverlaySel]   = { 0,   0x00,         OPAQUE  },
+ };
+ 
+ /* tagging */
+diff --git a/dwm.c b/dwm.c
+index b390867..1087d40 100644
+--- a/dwm.c
++++ b/dwm.c
+@@ -61,7 +61,7 @@
+ 
+ /* enums */
+ enum { CurNormal, CurResize, CurMove, CurLast }; /* cursor */
+-enum { SchemeNorm, SchemeSel }; /* color schemes */
++enum { SchemeNorm, SchemeSel, SchemeOverlayNorm, SchemeOverlaySel }; /* color schemes */
+ enum { NetSupported, NetWMName, NetWMState, NetWMCheck,
+        NetWMFullscreen, NetActiveWindow, NetWMWindowType,
+        NetWMWindowTypeDialog, NetClientList, NetLast }; /* EWMH atoms */
+@@ -131,6 +131,7 @@ struct Monitor {
+ 	Client *stack;
+ 	Monitor *next;
+ 	Window barwin;
++	Window overlay;
+ 	const Layout *lt[2];
+ };
+ 
+@@ -159,6 +160,7 @@ static void configure(Client *c);
+ static void configurenotify(XEvent *e);
+ static void configurerequest(XEvent *e);
+ static Monitor *createmon(void);
++static void createoverlay(Monitor *m);
+ static void destroynotify(XEvent *e);
+ static void detach(Client *c);
+ static void detachstack(Client *c);
+@@ -224,6 +226,7 @@ static void updatebars(void);
+ static void updateclientlist(void);
+ static int updategeom(void);
+ static void updatenumlockmask(void);
++static void updateoverlay(Monitor *m);
+ static void updatesizehints(Client *c);
+ static void updatestatus(void);
+ static void updatetitle(Client *c);
+@@ -650,9 +653,25 @@ createmon(void)
+ 	m->lt[0] = &layouts[0];
+ 	m->lt[1] = &layouts[1 % LENGTH(layouts)];
+ 	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
++	createoverlay(m);
+ 	return m;
+ }
+ 
++void
++createoverlay(Monitor *m)
++{
++	if(m->overlay)
++		return;
++	XSetWindowAttributes wa = {
++		.override_redirect = True,
++		.background_pixel = 0,
++		.border_pixel = 0,
++		.colormap = cmap,
++	};
++	m->overlay = XCreateWindow(dpy, root, 0, 0, 1, 1, borderpx, depth, InputOutput, visual, CWOverrideRedirect|CWColormap|CWBackPixel|CWBorderPixel, &wa);
++	XMapWindow(dpy, m->overlay);
++}
++
+ void
+ destroynotify(XEvent *e)
+ {
+@@ -749,6 +768,7 @@ drawbar(Monitor *m)
+ 		}
+ 	}
+ 	drw_map(drw, m->barwin, 0, 0, m->ww, bh);
++	updateoverlay(m);
+ }
+ 
+ void
+@@ -1955,6 +1975,28 @@ updatenumlockmask(void)
+ 	XFreeModifiermap(modmap);
+ }
+ 
++void
++updateoverlay(Monitor *m)
++{
++	int x, y;
++	unsigned w, h;
++
++	if(!m->overlay)
++		return;
++	x = m->wx;
++	y = m->wy;
++	w = m->ww - 2*borderpx;
++	h = m->wh - 2*borderpx;
++	XMoveResizeWindow(dpy, m->overlay, x, y, w, h);
++	if (m == selmon)
++		drw_setscheme(drw, scheme[SchemeOverlaySel]);
++	else
++		drw_setscheme(drw, scheme[SchemeOverlayNorm]);
++	XSetWindowBorder(dpy, m->overlay, drw->scheme[ColBorder].pixel);
++	drw_rect(drw, 0, 0, m->ww, m->wh, 1, 1);
++	drw_map(drw, m->overlay, 0, 0, m->ww, m->wh);
++}
++
+ void
+ updatesizehints(Client *c)
+ {
+@@ -2080,9 +2122,12 @@ wintomon(Window w)
+ 
+ 	if (w == root && getrootptr(&x, &y))
+ 		return recttomon(x, y, 1, 1);
+-	for (m = mons; m; m = m->next)
++	for (m = mons; m; m = m->next) {
+ 		if (w == m->barwin)
+ 			return m;
++		if (w == m->overlay)
++			return m;
++	}
+ 	if ((c = wintoclient(w)))
+ 		return c->mon;
+ 	return selmon;

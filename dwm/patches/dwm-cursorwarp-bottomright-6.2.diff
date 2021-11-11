@@ -1,0 +1,23 @@
+diff --git a/dwm.c b/dwm.c
+index 5e4d494..9fe82c1 100644
+--- a/dwm.c
++++ b/dwm.c
+@@ -828,6 +828,10 @@ focusmon(const Arg *arg)
+ 	unfocus(selmon->sel, 0);
+ 	selmon = m;
+ 	focus(NULL);
++	if (selmon->sel)
++		XWarpPointer(dpy, None, selmon->sel->win, 0, 0, 0, 0, selmon->sel->w-1, selmon->sel->h-1);
++    else
++        XWarpPointer(dpy, None, root, 0, 0, 0, 0, selmon->mx + selmon->mw/2, selmon->my + selmon->mh/2);
+ }
+ 
+ void
+@@ -853,6 +857,7 @@ focusstack(const Arg *arg)
+ 	if (c) {
+ 		focus(c);
+ 		restack(selmon);
++		XWarpPointer(dpy, None, c->win, 0, 0, 0, 0, c->w-1, c->h-1);
+ 	}
+ }
+ 
