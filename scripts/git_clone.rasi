@@ -1,0 +1,35 @@
+@import "../colors.rasi"
+
+* {
+    font: "FantasqueSansMono Nerd Font Regular 13";
+    background-color: @normal-bg;
+    text-color: @normal-fg;
+}
+#mainbox{
+    border: 0px;
+}
+
+#window {
+    location: center;
+    width: 400px;
+    height: 55;
+    border: 2px;
+    border-color: @border;
+    padding: 5px 5px 5px 5px;
+}
+#textbox {
+    background-color: @message-bg;
+    text-color: @message-fg;
+    padding: 0px 20px;
+}
+#inputbar {
+    children: [ textbox-prompt-colon, entry ];
+}
+#textbox-prompt-colon {
+    expand: false;
+    str: " ";
+    text-color: @prompt-fg;
+}
+#listview {
+    width: 0;
+}
