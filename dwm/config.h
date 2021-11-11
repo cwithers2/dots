@@ -2,38 +2,48 @@
 
 /* appearance */
 static const unsigned int borderpx  = 2;        /* border pixel of windows */
-static const unsigned int gappx     = 30;        /* gap pixel between windows */
+static const unsigned int gappx     = 30;        /* gaps between windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const unsigned int systraypinning = 0;   /* 0: sloppy systray follows selected monitor, >0: pin systray to monitor X */
+static const unsigned int systrayonleft = 0;   	/* 0: systray in the right corner, >0: systray on left of status text */
 static const unsigned int systrayspacing = 2;   /* systray spacing */
 static const int systraypinningfailfirst = 1;   /* 1: if pinning fails, display systray on the first monitor, False: display systray on the last monitor*/
 static const int showsystray        = 1;     /* 0 means no systray */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const int panelwidth         = 300;      /* width of the side bar*/
-static const char *paneltitles[]    = { "Conky", "Weather TK" };
 static const char *fonts[]          = { "ProFontIIx Nerd Font Mono:size=10" };
 static const char dmenufont[]       = "ProFontIIx Nerd Font Mono:size=10";
-static const char col_gray1[]       = "#222222";
-static const char col_gray2[]       = "#444444";
-static const char col_gray3[]       = "#bbbbbb";
-static const char col_gray4[]       = "#eeeeee";
-static const char col_cyan[]        = "#005577";
-static const char col_norm_fg[] = "#93a1a1";
-static const char col_norm_bg[] = "#002b36";
-static const char col_norm_bd[] = "#93a1a1";
-static const char col_sel_fg[]  = "#073642";
-static const char col_sel_bg[]  = "#2aa198";
-static const char col_sel_bd[]  = "#cb4b16";
+static const int panelwidth         = 300;          /* width of the side panel */
+static const char *paneltitles[]    = { "Conky", "Weather TK" };  /* titles of windows to override as side panels */
+static const char col_black[]       = "#000000";
+static const char col_norm_fg[]     = "#93a1a1";
+static const char col_norm_bg[]     = "#002b36";
+static const char col_norm_bd[]     = "#93a1a1";
+static const char col_sel_fg[]      = "#073642";
+static const char col_sel_bg[]      = "#2aa198";
+static const char col_sel_bd[]      = "#cb4b16";
+static const unsigned int baralpha = 0xd0;
+static const unsigned int borderalpha = OPAQUE;
+static const unsigned int overlayalpha = 0x40;
+
 static const char *colors[][3]      = {
 	/*               fg         bg         border   */
 	[SchemeNorm] = { col_norm_fg, col_norm_bg, col_norm_bd },
 	[SchemeSel]  = { col_sel_fg, col_sel_bg,  col_sel_bd },
+	/*                      n/a   bg         border   */
+	[SchemeOverlayNorm] = { NULL, col_black, col_black },
+	[SchemeOverlaySel]  = { NULL, col_black, col_sel_bg  },
+};
+static const unsigned int alphas[][3]      = {
+	/*               fg      bg        border     */
+	[SchemeNorm] = { OPAQUE, OPAQUE, borderalpha },
+	[SchemeSel]  = { OPAQUE, OPAQUE, borderalpha },
+	/*                       n/a  bg            border */
+	[SchemeOverlayNorm]  = { 0,   overlayalpha, overlayalpha  },
+	[SchemeOverlaySel]   = { 0,   0x00U,  OPAQUE  },
 };
 
 /* tagging */
-//static const char *tags[] = { "", "", "", "", "", "", "", "", "" };
-//static const char *tags[] = { "a", "b", "c", "d", "e", "f", "g", "h", "i" };
 static const char *tags[] = { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
 static const Rule rules[] = {
@@ -41,10 +51,10 @@ static const Rule rules[] = {
 	 *	WM_CLASS(STRING) = instance, class
 	 *	WM_NAME(STRING) = title
 	 */
-	/* class     instance  title                 tags mask     isfloating   monitor */
-    { "Firefox", NULL,      NULL,                 1,            0,            0 },
-    { "ffplay",  "ffplay",  "lofi hip hop radio", 0,            1,           -1 },
-    { "Gcolor3", "gcolor3", NULL,                 0,            1,           -1 },
+	/* class     instance   title         tags mask    isfloating      monitor */
+	{ "Firefox", NULL,      NULL,                 1,            0,            0 },
+	{ "ffplay",  "ffplay",  "lofi hip hop radio", 0,            1,           -1 },
+	{ "Gcolor3", "gcolor3", NULL,                 0,            1,           -1 },
 };
 
 /* layout(s) */
@@ -57,7 +67,7 @@ static const Layout layouts[] = {
 	/* symbol     arrange function */
 	{ "T",      tile },    /* first entry is default */
 	{ "F",      NULL },    /* no layout function means floating behavior */
-//	{ "[M]",      monocle },
+	{ "M",      monocle },
 };
 
 /* key definitions */
@@ -69,21 +79,17 @@ static const Layout layouts[] = {
 	{ MODKEY|ControlMask|ShiftMask, KEY,      toggletag,      {.ui = 1 << TAG} },
 
 /* helper for spawning shell commands in the pre dwm-5.0 fashion */
-#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
+#define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } },
+
+/* define user program keybinds faster */
+#define PROGRAM(M, K, ...) { M, K, spawn, {.v = (char*[]){__VA_ARGS__, NULL} } },
 
 /* commands */
 static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
 static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_norm_bg, "-nf", col_norm_fg, "-sb", col_sel_bg, "-sf", col_sel_fg, NULL };
-static const char *termcmd[]  = { "urxvt", NULL };
-static const char *roficmd[]  = { "rofi", "-show", NULL };
-static const char *srchcmd[]  = { "/home/colin/scripts/srch/srch.sh", NULL };
-static const char *lofi[]     = { "/home/colin/scripts/lofi.sh", NULL };
-static const char *gcolor3[]  = { "gcolor3", NULL };
 
 static Key keys[] = {
 	/* modifier                     key        function        argument */
-	{ MODKEY,                       XK_p,      spawn,          {.v = roficmd } },
-	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
 	{ MODKEY,                       XK_b,      togglebar,      {0} },
 	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
 	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
@@ -105,11 +111,15 @@ static Key keys[] = {
 	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
 	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
 	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
-	{ MODKEY,                       XK_s,      togglepanel,    {.i =  0 } },
-    { MODKEY,                       XK_w,      togglepanel,    {.i =  1 } },
-    { MODKEY,                       XK_o,      spawn,          {.v = srchcmd } },
-    { MODKEY,                       XK_a,      spawn,          {.v = lofi } },
-    { MODKEY,                       XK_g,      spawn,          {.v = gcolor3 } },
+	{ MODKEY,                       XK_s,      togglepanel,    {.ui =  0 } },
+	{ MODKEY,                       XK_w,      togglepanel,    {.ui =  1 } },
+	PROGRAM(MODKEY|ShiftMask,       XK_d,                      "/home/colin/scripts/timer.sh")
+	PROGRAM(MODKEY,                 XK_p,                      "rofi", "-show")
+	PROGRAM(MODKEY|ShiftMask,       XK_Return,                 "urxvt")
+	PROGRAM(MODKEY,                 XK_o,                      "/home/colin/scripts/srch/srch.sh")
+	PROGRAM(MODKEY,                 XK_a,                      "/home/colin/scripts/lofi.sh")
+	PROGRAM(MODKEY,                 XK_g,                      "gcolors3")
+	PROGRAM(MODKEY,                 XK_r,                      "/home/colin/scripts/git_clone.sh")
 	TAGKEYS(                        XK_1,                      0)
 	TAGKEYS(                        XK_2,                      1)
 	TAGKEYS(                        XK_3,                      2)
@@ -127,9 +137,9 @@ static Key keys[] = {
 static Button buttons[] = {
 	/* click                event mask      button          function        argument */
 	{ ClkLtSymbol,          0,              Button1,        setlayout,      {0} },
-	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
+//	{ ClkLtSymbol,          0,              Button3,        setlayout,      {.v = &layouts[2]} },
 	{ ClkWinTitle,          0,              Button2,        zoom,           {0} },
-	{ ClkStatusText,        0,              Button2,        spawn,          {.v = termcmd } },
+//	{ ClkStatusText,        0,              Button2,        spawn,          {.v = termcmd } },
 	{ ClkClientWin,         MODKEY,         Button1,        movemouse,      {0} },
 	{ ClkClientWin,         MODKEY,         Button2,        togglefloating, {0} },
 	{ ClkClientWin,         MODKEY,         Button3,        resizemouse,    {0} },
